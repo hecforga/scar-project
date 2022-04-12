@@ -1,22 +1,45 @@
+import path from 'path';
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import { readCSV, toJSON } from 'danfojs-node';
+
+type IUser = {
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+  id: number;
+  age: number;
+  gender: string;
+  occupation: string;
+};
 
 export default NextAuth({
   providers: [
     CredentialsProvider({
-      // The name to display on the sign in form (e.g. "Sign in with...")
-      name: 'Credentials',
-      // The credentials is used to generate a suitable form on the sign in page.
-      // You can specify whatever fields you are expecting to be submitted.
-      // e.g. domain, username, password, 2FA token, etc.
-      // You can pass any HTML attribute to the <input> tag through the object.
+      name: 'User id',
       credentials: {
-        username: { label: 'Username', type: 'text', placeholder: 'jsmith' },
-        password: { label: 'Password', type: 'password' },
+        username: { label: 'User id', type: 'text' },
+        password: {
+          label: 'Password',
+          type: 'password',
+          placeholder: 'Whatever',
+        },
       },
-      async authorize(credentials, req) {
-        // Add logic here to look up the user from the credentials supplied
-        const user = { id: 1, name: 'J Smith', email: 'jsmith@example.com' };
+      async authorize(credentials, _req) {
+        if (!credentials) {
+          return null;
+        }
+
+        let user;
+        try {
+          const dataDir = path.resolve('./public', 'data');
+          const df = await readCSV(dataDir + '/users.txt');
+          const users = toJSON(df) as Array<IUser>;
+          user = users.find((u) => u.id === +credentials.username);
+        } catch (e) {
+          console.log(e);
+          return null;
+        }
 
         if (user) {
           // Any object returned will be saved in `user` property of the JWT
@@ -34,7 +57,14 @@ export default NextAuth({
     colorScheme: 'light',
   },
   callbacks: {
-    async jwt({ token }) {
+    async session({ session, token }) {
+      session.user = token.user as IUser;
+      return session;
+    },
+    async jwt({ token, user }) {
+      if (user) {
+        token.user = user;
+      }
       token.userRole = 'admin';
       return token;
     },
