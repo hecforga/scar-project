@@ -1,0 +1,49 @@
+{
+  "name": "scar-hector-fornes",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": "14.x"
+  },
+  "scripts": {
+    "dev": "next",
+    "build": "next build",
+    "start": "next start",
+    "type-check": "tsc --pretty --noEmit",
+    "lint": "next lint",
+    "lint-staged": "lint-staged"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^4.7.0",
+    "antd": "^4.18.9",
+    "lodash.debounce": "^4.0.8",
+    "next": "^12.1.0",
+    "next-auth": "^4.3.1",
+    "next-compose-plugins": "^2.2.1",
+    "next-plugin-antd-less": "^1.8.0",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-is": "^17.0.2",
+    "react-responsive": "^9.0.0-beta.6",
+    "rosetta": "^1.1.0",
+    "styled-components": "^5.2.3"
+  },
+  "devDependencies": {
+    "@types/lodash.debounce": "^4.0.6",
+    "@types/node": "15.0.0",
+    "@types/react": "17.0.4",
+    "@types/react-dom": "17.0.3",
+    "@types/react-responsive": "^8.0.5",
+    "@types/styled-components": "5.1.9",
+    "babel-plugin-import": "^1.13.3",
+    "babel-plugin-styled-components": "^1.13.3",
+    "eslint": "^7.32.0",
+    "eslint-config-next": "^12.1.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "husky": "^4.3.8",
+    "lint-staged": "^10.5.4",
+    "prettier": "^2.5.1",
+    "typescript": "^4.5.5"
+  }
+}
