@@ -3,7 +3,7 @@ import { useSession, signOut, getSession } from 'next-auth/react';
 import { Post } from '@prisma/client';
 import { Button } from 'antd';
 
-import prisma from '../../libs/prisma';
+import { getMyFeed } from '../api/feed';
 
 type StaticProps = {
   feed: Post[];
@@ -35,17 +35,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
     return { props: { feed: [] } };
   }
 
-  const feed = await prisma.post.findMany({
-    where: {
-      author: { id: session.user.id },
-      published: true,
-    },
-    include: {
-      author: {
-        select: { id: true },
-      },
-    },
-  });
+  const feed = await getMyFeed(session.user.id);
   return {
     props: { feed },
   };

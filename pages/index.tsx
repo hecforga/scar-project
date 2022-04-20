@@ -9,6 +9,7 @@ import { EnvironmentFilled } from '@ant-design/icons';
 
 import useI18n from '../common/hooks/useI18n';
 import { Footer, Header } from '../frontend/components/shared';
+import { getFeed } from './api/feed';
 
 type StaticProps = {
   feed: Post[];
@@ -235,8 +236,7 @@ const HomePage: NextPage<Props> = ({ feed, theme }) => {
 };
 
 export const getServerSideProps: GetServerSideProps<StaticProps> = async () => {
-  const res = await fetch('/api/feed');
-  const feed = await res.json();
+  const feed = await getFeed();
   return {
     props: { feed },
   };
