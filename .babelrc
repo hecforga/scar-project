@@ -8,6 +8,7 @@
         "style": true
       }
     ],
-    "styled-components"
+    "styled-components",
+    "superjson-next"
   ]
 }

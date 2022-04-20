@@ -1,17 +1,8 @@
-import path from 'path';
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { readCSV, toJSON } from 'danfojs-node';
+import { User } from '@prisma/client';
 
-type IUser = {
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
-  id: number;
-  age: number;
-  gender: string;
-  occupation: string;
-};
+import prisma from '../../../libs/prisma';
 
 export default NextAuth({
   providers: [
@@ -32,10 +23,11 @@ export default NextAuth({
 
         let user;
         try {
-          const dataDir = path.resolve('./public', 'data');
-          const df = await readCSV(dataDir + '/users.txt');
-          const users = toJSON(df) as Array<IUser>;
-          user = users.find((u) => u.id === +credentials.username);
+          user = prisma.user.findFirst({
+            where: {
+              id: +credentials.username,
+            },
+          });
         } catch (e) {
           console.log(e);
           return null;
@@ -58,14 +50,13 @@ export default NextAuth({
   },
   callbacks: {
     async session({ session, token }) {
-      session.user = token.user as IUser;
+      session.user = token.user as User;
       return session;
     },
     async jwt({ token, user }) {
       if (user) {
         token.user = user;
       }
-      token.userRole = 'admin';
       return token;
     },
   },

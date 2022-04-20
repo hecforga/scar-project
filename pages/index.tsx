@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { NextPage } from 'next';
+import { GetServerSideProps, NextPage } from 'next';
+import { Post } from '@prisma/client';
 import styled, { DefaultTheme, withTheme } from 'styled-components';
 import { useMediaQuery } from 'react-responsive';
 import debounce from 'lodash.debounce';
@@ -9,7 +10,11 @@ import { EnvironmentFilled } from '@ant-design/icons';
 import useI18n from '../common/hooks/useI18n';
 import { Footer, Header } from '../frontend/components/shared';
 
-type Props = {
+type StaticProps = {
+  feed: Post[];
+};
+
+type Props = StaticProps & {
   theme: DefaultTheme;
 };
 
@@ -101,7 +106,7 @@ const ScrollableSection = styled.div`
   }
 `;
 
-const HomePage: NextPage<Props> = ({ theme }) => {
+const HomePage: NextPage<Props> = ({ feed, theme }) => {
   const i18n = useI18n();
 
   const isMdd = useMediaQuery({ query: theme.breakpoints.mdd });
@@ -216,13 +221,25 @@ const HomePage: NextPage<Props> = ({ theme }) => {
         </ShowMapButtonSection>
         <TransparentMddSection id={transparentMddSectionId} />
         <ScrollableSection id={scrollableSectionId}>
-          <div style={{ height: '2000px', backgroundColor: 'blue' }}>TODO</div>
+          <div style={{ height: '2000px', backgroundColor: 'blue' }}>
+            {feed.map((post) => (
+              <div key={post.id}>{post.id}</div>
+            ))}
+          </div>
         </ScrollableSection>
       </Content>
 
       <Footer />
     </Layout>
   );
+};
+
+export const getServerSideProps: GetServerSideProps<StaticProps> = async () => {
+  const res = await fetch('/api/feed');
+  const feed = await res.json();
+  return {
+    props: { feed },
+  };
 };
 
 export default withTheme(HomePage);
