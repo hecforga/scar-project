@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { GetServerSideProps, NextPage } from 'next';
-import { Post } from '@prisma/client';
+import { Item } from '@prisma/client';
 import styled, { DefaultTheme, withTheme } from 'styled-components';
 import { useMediaQuery } from 'react-responsive';
 import debounce from 'lodash.debounce';
@@ -12,7 +12,7 @@ import { Footer, Header } from '../frontend/components/shared';
 import { getFeed } from './api/feed';
 
 type StaticProps = {
-  feed: Post[];
+  feed: Item[];
 };
 
 type Props = StaticProps & {
@@ -223,8 +223,8 @@ const HomePage: NextPage<Props> = ({ feed, theme }) => {
         <TransparentMddSection id={transparentMddSectionId} />
         <ScrollableSection id={scrollableSectionId}>
           <div style={{ height: '2000px', backgroundColor: 'blue' }}>
-            {feed.map((post) => (
-              <div key={post.id}>{post.id}</div>
+            {feed.map((item) => (
+              <div key={item.id}>{item.id}</div>
             ))}
           </div>
         </ScrollableSection>

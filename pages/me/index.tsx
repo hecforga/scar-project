@@ -1,12 +1,12 @@
 import { GetServerSideProps, NextPage } from 'next';
 import { useSession, signOut, getSession } from 'next-auth/react';
-import { Post } from '@prisma/client';
+import { Item } from '@prisma/client';
 import { Button } from 'antd';
 
-import { getMyFeed } from '../api/feed';
+import { getFeed } from '../api/feed';
 
 type StaticProps = {
-  feed: Post[];
+  feed: Item[];
 };
 
 type Props = StaticProps;
@@ -17,8 +17,8 @@ const MePage: NextPage<Props> = ({ feed }) => {
   return (
     <div>
       <pre>{JSON.stringify(data, null, 2)}</pre>
-      {feed.map((post) => (
-        <div key={post.id}>{post.id}</div>
+      {feed.map((item) => (
+        <div key={item.id}>{item.id}</div>
       ))}
       <Button type="primary" onClick={() => signOut()}>
         Cerrar sesión
@@ -29,13 +29,14 @@ const MePage: NextPage<Props> = ({ feed }) => {
 
 export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   const session = await getSession({ req });
+  let feed: Item[] = [];
 
   if (!session) {
     res.statusCode = 403;
-    return { props: { feed: [] } };
+    return { props: { feed } };
   }
 
-  const feed = await getMyFeed(session.user.id);
+  feed = await getFeed();
   return {
     props: { feed },
   };

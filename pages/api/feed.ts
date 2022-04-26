@@ -1,28 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { Post, User } from '@prisma/client';
+import { Item } from '@prisma/client';
 
 import prisma from '../../libs/prisma';
 
-export const getFeed = async (): Promise<
-  (Post & { author: User | null })[]
-> => {
-  return prisma.post.findMany({
-    where: {
-      published: true,
-    },
-    include: { author: true },
-  });
-};
-
-export const getMyFeed = async (
-  userId: number
-): Promise<(Post & { author: User | null })[]> => {
-  return prisma.post.findMany({
-    where: {
-      published: true,
-      author: { id: userId },
-    },
-    include: { author: true },
+export const getFeed = async (): Promise<Item[]> => {
+  return prisma.item.findMany({
+    take: 5,
   });
 };
 
