@@ -1,14 +1,12 @@
-/*
-  Warnings:
+-- CreateTable
+CREATE TABLE "User" (
+    "id" SERIAL NOT NULL,
+    "age" INTEGER NOT NULL,
+    "gender" TEXT NOT NULL,
+    "occupation" TEXT NOT NULL,
 
-  - You are about to drop the `Post` table. If the table is not empty, all the data it contains will be lost.
-
-*/
--- DropForeignKey
-ALTER TABLE "Post" DROP CONSTRAINT "Post_authorId_fkey";
-
--- DropTable
-DROP TABLE "Post";
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "Item" (
@@ -27,12 +25,28 @@ CREATE TABLE "Genre" (
 );
 
 -- CreateTable
+CREATE TABLE "Rating" (
+    "id" SERIAL NOT NULL,
+    "rating" INTEGER NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "itemId" INTEGER NOT NULL,
+
+    CONSTRAINT "Rating_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "GenresOnItems" (
     "itemId" INTEGER NOT NULL,
     "genreId" INTEGER NOT NULL,
 
     CONSTRAINT "GenresOnItems_pkey" PRIMARY KEY ("itemId","genreId")
 );
+
+-- AddForeignKey
+ALTER TABLE "Rating" ADD CONSTRAINT "Rating_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Rating" ADD CONSTRAINT "Rating_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "Item"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "GenresOnItems" ADD CONSTRAINT "GenresOnItems_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "Item"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

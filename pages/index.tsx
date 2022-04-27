@@ -1,18 +1,21 @@
 import { useEffect } from 'react';
-import { GetServerSideProps, NextPage } from 'next';
-import { Item } from '@prisma/client';
+import { GetStaticProps, NextPage } from 'next';
+import { Item, Rating } from '@prisma/client';
 import styled, { DefaultTheme, withTheme } from 'styled-components';
 import { useMediaQuery } from 'react-responsive';
 import debounce from 'lodash.debounce';
 import { Button } from 'antd';
 import { EnvironmentFilled } from '@ant-design/icons';
 
+import prisma from '../libs/prisma';
 import useI18n from '../common/hooks/useI18n';
 import { Footer, Header } from '../frontend/components/shared';
 import { getFeed } from './api/feed';
 
 type StaticProps = {
-  feed: Item[];
+  feed: (Item & {
+    ratings: Rating[];
+  })[];
 };
 
 type Props = StaticProps & {
@@ -235,10 +238,12 @@ const HomePage: NextPage<Props> = ({ feed, theme }) => {
   );
 };
 
-export const getServerSideProps: GetServerSideProps<StaticProps> = async () => {
+export const getStaticProps: GetStaticProps<StaticProps> = async () => {
   const feed = await getFeed();
   return {
-    props: { feed },
+    props: {
+      feed,
+    },
   };
 };
 

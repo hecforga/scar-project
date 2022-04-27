@@ -1,12 +1,14 @@
 import { GetServerSideProps, NextPage } from 'next';
 import { useSession, signOut, getSession } from 'next-auth/react';
-import { Item } from '@prisma/client';
+import { Item, Rating } from '@prisma/client';
 import { Button } from 'antd';
 
 import { getFeed } from '../api/feed';
 
 type StaticProps = {
-  feed: Item[];
+  feed: (Item & {
+    ratings: Rating[];
+  })[];
 };
 
 type Props = StaticProps;
@@ -18,7 +20,9 @@ const MePage: NextPage<Props> = ({ feed }) => {
     <div>
       <pre>{JSON.stringify(data, null, 2)}</pre>
       {feed.map((item) => (
-        <div key={item.id}>{item.id}</div>
+        <div key={item.id}>
+          {item.id} - {item.ratings.length}
+        </div>
       ))}
       <Button type="primary" onClick={() => signOut()}>
         Cerrar sesión
