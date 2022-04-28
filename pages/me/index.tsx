@@ -1,19 +1,21 @@
 import { GetServerSideProps, NextPage } from 'next';
 import { useSession, signOut, getSession } from 'next-auth/react';
-import { Item, Rating } from '@prisma/client';
+import { Item, Neighborhood, Rating } from '@prisma/client';
 import { Button } from 'antd';
 
 import { getFeed } from '../api/feed';
+import { getNeighborhood } from '../api/neighborhood';
 
-type StaticProps = {
+type ServerSideProps = {
   feed: (Item & {
     ratings: Rating[];
   })[];
+  neighbours: Neighborhood[];
 };
 
-type Props = StaticProps;
+type Props = ServerSideProps;
 
-const MePage: NextPage<Props> = ({ feed }) => {
+const MePage: NextPage<Props> = ({ feed, neighbours }) => {
   const { data } = useSession();
 
   return (
@@ -24,6 +26,7 @@ const MePage: NextPage<Props> = ({ feed }) => {
           {item.id} - {item.ratings.length}
         </div>
       ))}
+      <div>{JSON.stringify(neighbours)}</div>
       <Button type="primary" onClick={() => signOut()}>
         Cerrar sesión
       </Button>
@@ -31,18 +34,25 @@ const MePage: NextPage<Props> = ({ feed }) => {
   );
 };
 
-export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
+export const getServerSideProps: GetServerSideProps<ServerSideProps> = async ({
+  req,
+  res,
+}) => {
   const session = await getSession({ req });
-  let feed: Item[] = [];
+  let feed: (Item & {
+    ratings: Rating[];
+  })[] = [];
+  let neighbours: Neighborhood[] = [];
 
-  if (!session) {
+  if (session) {
+    feed = await getFeed();
+    neighbours = await getNeighborhood(session.user.id);
+  } else {
     res.statusCode = 403;
-    return { props: { feed } };
   }
 
-  feed = await getFeed();
   return {
-    props: { feed },
+    props: { feed, neighbours },
   };
 };
 

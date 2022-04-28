@@ -36,10 +36,9 @@ const populateGenres = async () => {
   }));
 
   for (const g of genreData) {
-    const genre = await prisma.genre.create({
+    await prisma.genre.create({
       data: g,
     });
-    console.log(`Created genre with id: ${genre.id}`);
   }
 };
 
@@ -71,10 +70,9 @@ const populateItems = async () => {
   });
 
   for (const i of itemData) {
-    const item = await prisma.item.create({
+    await prisma.item.create({
       data: i,
     });
-    console.log(`Created item with id: ${item.id}`);
   }
 };
 
@@ -89,10 +87,9 @@ const populateUsers = async () => {
   }));
 
   for (const u of userData) {
-    const user = await prisma.user.create({
+    await prisma.user.create({
       data: u,
     });
-    console.log(`Created user with id: ${user.id}`);
   }
 };
 
@@ -120,7 +117,6 @@ const populateRatings = async () => {
       data: r,
     });
     ratings.push(rating);
-    console.log(`Created rating with id: ${rating.id}`);
   }
 
   const userIds = [...new Set(ratings.map((rating) => rating.userId))];
@@ -135,10 +131,9 @@ const populateRatings = async () => {
       genreCounterMap[userId]
     );
     for (const p of preferencesData) {
-      const preference = await prisma.preference.create({
+      await prisma.preference.create({
         data: p,
       });
-      console.log(`Created preference with id: ${preference.id}`);
     }
   }
 };

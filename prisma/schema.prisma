@@ -8,11 +8,20 @@ datasource db {
 }
 
 model User {
+  id                      Int   @id @default(autoincrement())
+  age                     Int
+  gender                  String
+  occupation              String
+  ratings                 Rating[]
+  preferences             Preference[]
+  leftSideNeighborhoods   Neighborhood[] @relation("leftSideNeighborhoods")
+  rightSideNeighborhoods  Neighborhood[] @relation("rightSideNeighborhoods")
+}
+
+model Genre {
   id            Int   @id @default(autoincrement())
-  age           Int
-  gender        String
-  occupation    String
-  ratings       Rating[]
+  name          String
+  items         GenresOnItems[]
   preferences   Preference[]
 }
 
@@ -23,11 +32,13 @@ model Item {
   ratings   Rating[]
 }
 
-model Genre {
-  id            Int   @id @default(autoincrement())
-  name          String
-  items         GenresOnItems[]
-  preferences   Preference[]
+model GenresOnItems {
+  item      Item    @relation(fields: [itemId], references: [id])
+  itemId    Int     // relation scalar field (used in the `@relation` attribute above)
+  genre     Genre   @relation(fields: [genreId], references: [id])
+  genreId   Int     // relation scalar field (used in the `@relation` attribute above)
+
+  @@id([itemId, genreId])
 }
 
 model Rating {
@@ -48,11 +59,11 @@ model Preference {
   genreId   Int
 }
 
-model GenresOnItems {
-  item      Item    @relation(fields: [itemId], references: [id])
-  itemId    Int     // relation scalar field (used in the `@relation` attribute above)
-  genre     Genre   @relation(fields: [genreId], references: [id])
-  genreId   Int     // relation scalar field (used in the `@relation` attribute above)
-
-  @@id([itemId, genreId])
+model Neighborhood {
+  id            Int   @id @default(autoincrement())
+  distance      Float
+  leftUser      User  @relation(fields: [leftUserId], references: [id], name: "leftSideNeighborhoods")
+  leftUserId    Int
+  rightUser     User  @relation(fields: [rightUserId], references: [id], name: "rightSideNeighborhoods")
+  rightUserId   Int
 }

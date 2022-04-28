@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { GetStaticProps, NextPage } from 'next';
-import { Item, Rating } from '@prisma/client';
+import { Item, Prisma, Rating } from '@prisma/client';
 import styled, { DefaultTheme, withTheme } from 'styled-components';
 import { useMediaQuery } from 'react-responsive';
 import debounce from 'lodash.debounce';
@@ -8,14 +8,17 @@ import { Button } from 'antd';
 import { EnvironmentFilled } from '@ant-design/icons';
 
 import prisma from '../libs/prisma';
+import { getFeed } from './api/feed';
+import { INeighbour } from '../common/model/neighbour.model';
 import useI18n from '../common/hooks/useI18n';
 import { Footer, Header } from '../frontend/components/shared';
-import { getFeed } from './api/feed';
+import { computeNeighboursMatrix } from '../common/utils/neighbours.utils';
 
 type StaticProps = {
   feed: (Item & {
     ratings: Rating[];
   })[];
+  neighboursMatrix: Record<number, INeighbour[]>;
 };
 
 type Props = StaticProps & {
@@ -110,7 +113,7 @@ const ScrollableSection = styled.div`
   }
 `;
 
-const HomePage: NextPage<Props> = ({ feed, theme }) => {
+const HomePage: NextPage<Props> = ({ feed, neighboursMatrix, theme }) => {
   const i18n = useI18n();
 
   const isMdd = useMediaQuery({ query: theme.breakpoints.mdd });
@@ -229,6 +232,7 @@ const HomePage: NextPage<Props> = ({ feed, theme }) => {
             {feed.map((item) => (
               <div key={item.id}>{item.id}</div>
             ))}
+            <div>{JSON.stringify(neighboursMatrix[1])}</div>
           </div>
         </ScrollableSection>
       </Content>
@@ -240,9 +244,36 @@ const HomePage: NextPage<Props> = ({ feed, theme }) => {
 
 export const getStaticProps: GetStaticProps<StaticProps> = async () => {
   const feed = await getFeed();
+
+  const users = await prisma.user.findMany({
+    include: {
+      preferences: true,
+    },
+  });
+  const genres = await prisma.genre.findMany();
+
+  const neighboursMatrix = computeNeighboursMatrix(users, genres);
+  if (users.length > 0 && neighboursMatrix[users[0].id]) {
+    await prisma.neighborhood.deleteMany();
+
+    for (let user of users) {
+      const data: Prisma.NeighborhoodCreateManyInput[] = neighboursMatrix[
+        user.id
+      ].map((neighbour) => ({
+        distance: neighbour.distance,
+        leftUserId: user.id,
+        rightUserId: neighbour.userId,
+      }));
+      await prisma.neighborhood.createMany({
+        data,
+      });
+    }
+  }
+
   return {
     props: {
       feed,
+      neighboursMatrix,
     },
   };
 };
