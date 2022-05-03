@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE "Neighborhood" ALTER COLUMN "distance" SET DATA TYPE DOUBLE PRECISION;
