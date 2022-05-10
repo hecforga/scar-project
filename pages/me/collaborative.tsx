@@ -10,11 +10,13 @@ import {
   Rating,
   User,
 } from '@prisma/client';
-import { Button, Col, Row } from 'antd';
+import styled from 'styled-components';
+import { Col, Row } from 'antd';
 
 import { getRatings } from '../api/rating';
 import { getPreferences } from '../api/preference';
 import { getNeighborhood } from '../api/neighborhood';
+import { Footer, Header } from '../../frontend/components/shared';
 
 type ServerSideProps = {
   ratings: (Rating & {
@@ -38,7 +40,25 @@ type ServerSideProps = {
 
 type Props = ServerSideProps;
 
-const MePage: NextPage<Props> = ({ ratings, preferences, neighbours }) => {
+const Layout = styled.div`
+  display: flex;
+  flex: auto;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-height: 0;
+`;
+
+const Content = styled.main`
+  position: relative;
+  flex: auto;
+  margin-top: ${(props) => props.theme.headerHeight};
+`;
+
+const CollaborativePage: NextPage<Props> = ({
+  ratings,
+  preferences,
+  neighbours,
+}) => {
   const { data } = useSession();
 
   const [recommendedItems, setRecommendedItems] = useState<
@@ -90,28 +110,31 @@ const MePage: NextPage<Props> = ({ ratings, preferences, neighbours }) => {
   }, [ratings, neighbours]);
 
   return (
-    <div>
-      <Row>
-        <Col span={12}>
-          <pre>
-            {JSON.stringify(
-              {
-                ...data,
-                myPreferences: preferences,
-              },
-              null,
-              2
-            )}
-          </pre>
-        </Col>
-        <Col span={12}>
-          <pre>{JSON.stringify(recommendedItems, null, 2)}</pre>
-        </Col>
-      </Row>
-      <Button type="primary" onClick={() => signOut()}>
-        Cerrar sesión
-      </Button>
-    </div>
+    <Layout>
+      <Header userId={data?.user.id} signOut={signOut} />
+
+      <Content>
+        <Row>
+          <Col span={12}>
+            <pre>
+              {JSON.stringify(
+                {
+                  ...data,
+                  myPreferences: preferences,
+                },
+                null,
+                2
+              )}
+            </pre>
+          </Col>
+          <Col span={12}>
+            <pre>{JSON.stringify(recommendedItems, null, 2)}</pre>
+          </Col>
+        </Row>
+      </Content>
+
+      <Footer />
+    </Layout>
   );
 };
 
@@ -176,4 +199,4 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async ({
   };
 };
 
-export default MePage;
+export default CollaborativePage;

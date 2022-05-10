@@ -11,9 +11,11 @@ const MAX_PREFERENCES = 5;
 const MIN_PERCENTAGE = 60;
 
 export const computeGenreCounters = async (
-  userRatings: Rating[]
+  userId: number,
+  ratings: Rating[]
 ): Promise<GenreCounter[]> => {
   const genreMap: Record<number, number> = {};
+  const userRatings = ratings.filter((rating) => rating.userId === userId);
   for (const rating of userRatings) {
     const item = await prisma.item.findUnique({
       where: {
@@ -43,10 +45,10 @@ export const computeGenreCounters = async (
   return genreCounters;
 };
 
-export const computePreferences = async (
+export const computePreferences = (
   userId: number,
   genreCounters: GenreCounter[]
-): Promise<Prisma.PreferenceCreateInput[]> => {
+): Prisma.PreferenceCreateInput[] => {
   const result: Prisma.PreferenceCreateInput[] = [];
   const numberOfPreferences = Math.min(MAX_PREFERENCES, genreCounters.length);
   const multiplier =

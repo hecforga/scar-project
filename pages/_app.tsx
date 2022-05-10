@@ -43,6 +43,14 @@ const GlobalStyle = createGlobalStyle`
       --gutter: ${(props) => props.theme.grid.xxlGutter};
     }
   }
+
+  header a, footer a {
+    color: black;
+
+    &:hover,:active {
+      color: black;
+    }
+  }
 `;
 
 export default function App({ Component, pageProps }: AppProps) {

@@ -119,17 +119,16 @@ const populateRatings = async () => {
     ratings.push(rating);
   }
 
-  const userIds = [...new Set(ratings.map((rating) => rating.userId))];
+  const usersIds = [...new Set(ratings.map((rating) => rating.userId))];
   const genreCounterMap: Record<number, GenreCounter[]> = {};
-  for (const userId of userIds) {
-    const userRatings = ratings.filter((rating) => rating.userId === userId);
-    genreCounterMap[userId] = await computeGenreCounters(userRatings);
+  const genresCounters = await Promise.all(
+    usersIds.map((userId) => computeGenreCounters(userId, ratings))
+  );
+  for (let i = 0; i < usersIds.length; i++) {
+    genreCounterMap[usersIds[i]] = genresCounters[i];
   }
-  for (const userId of userIds) {
-    const preferencesData = await computePreferences(
-      userId,
-      genreCounterMap[userId]
-    );
+  for (const userId of usersIds) {
+    const preferencesData = computePreferences(userId, genreCounterMap[userId]);
     for (const p of preferencesData) {
       await prisma.preference.create({
         data: p,
