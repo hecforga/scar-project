@@ -1,41 +1,56 @@
-import { useEffect, useState } from 'react';
 import { GetServerSideProps, NextPage } from 'next';
 import { useSession, signOut, getSession } from 'next-auth/react';
 import {
   Genre,
   GenresOnItems,
   Item,
-  Neighborhood,
   Preference,
   Rating,
   User,
 } from '@prisma/client';
+import * as dfd from 'danfojs-node';
 import styled from 'styled-components';
-import { Col, Row } from 'antd';
+import { Col, PageHeader, Row } from 'antd';
 
-import { getRatings } from '../api/rating';
+import { getRatings } from '../api/ratings';
 import { getPreferences } from '../api/preference';
-import { getNeighborhood } from '../api/neighborhood';
 import { Footer, Header } from '../../frontend/components/shared';
 
+type RecommendedItem = Item & {
+  rating: number;
+};
+
+type MyPreference = Preference & {
+  genre: Genre;
+};
+
+type MyRating = Rating & {
+  item: Item & {
+    genres: (GenresOnItems & {
+      genre: Genre;
+    })[];
+  };
+  user: {
+    age: number;
+    gender: string;
+    occupation: string;
+  };
+};
+
+type MyRatingWithGenreAsString = Rating & {
+  item: Item & {
+    genres: string[];
+  };
+  user: {
+    age: number;
+    gender: string;
+    occupation: string;
+  };
+};
+
 type ServerSideProps = {
-  ratings: (Rating & {
-    item: Item & {
-      genres: string[];
-    };
-  })[];
-  preferences: (Preference & {
-    genre: Genre;
-  })[];
-  neighbours: (Neighborhood & {
-    rightUser: User & {
-      ratings: (Rating & {
-        item: Item & {
-          genres: string[];
-        };
-      })[];
-    };
-  })[];
+  recommendedItems: RecommendedItem[];
+  preferences: MyPreference[];
 };
 
 type Props = ServerSideProps;
@@ -55,65 +70,18 @@ const Content = styled.main`
 `;
 
 const DemographicPage: NextPage<Props> = ({
-  ratings,
+  recommendedItems,
   preferences,
-  neighbours,
 }) => {
   const { data } = useSession();
-
-  const [recommendedItems, setRecommendedItems] = useState<
-    (Item & {
-      rating: number;
-    })[]
-  >([]);
-
-  useEffect(() => {
-    const neighboursRatings = neighbours
-      .map((neighbour) =>
-        neighbour.rightUser.ratings.map((rating) => ({
-          ...rating,
-          distance: neighbour.distance,
-        }))
-      )
-      .reduce(
-        (previousValue, currentValue) => [
-          ...previousValue,
-          ...currentValue.map((rating) => ({
-            ...rating,
-            rating: rating.rating * rating.distance,
-          })),
-        ],
-        []
-      )
-      .filter(
-        (neighbourRating) =>
-          !ratings
-            .map((rating) => rating.itemId)
-            .includes(neighbourRating.itemId)
-      );
-    const itemsWithRating: (Item & {
-      genres: string[];
-      rating: number;
-    })[] = [];
-    for (let neighbourRating of neighboursRatings) {
-      const itemWithRating = itemsWithRating.find(
-        (item) => item.id === neighbourRating.itemId
-      ) || { ...neighbourRating.item, rating: 0 };
-      if (itemWithRating.rating === 0) {
-        itemsWithRating.push(itemWithRating);
-      }
-      itemWithRating.rating += neighbourRating.rating;
-    }
-    setRecommendedItems(
-      [...itemsWithRating].sort((a, b) => b.rating - a.rating).slice(0, 5)
-    );
-  }, [ratings, neighbours]);
 
   return (
     <Layout>
       <Header userId={data?.user.id} signOut={signOut} />
 
       <Content>
+        <PageHeader title="Recomendador demográfico" />
+
         <Row>
           <Col span={12}>
             <pre>
@@ -138,15 +106,7 @@ const DemographicPage: NextPage<Props> = ({
   );
 };
 
-const convertGenresToString = (
-  ratings: (Rating & {
-    item: Item & {
-      genres: (GenresOnItems & {
-        genre: Genre;
-      })[];
-    };
-  })[]
-) => {
+const convertGenresToString = (ratings: MyRating[]) => {
   return ratings.map((rating) => ({
     ...rating,
     item: {
@@ -157,45 +117,123 @@ const convertGenresToString = (
   }));
 };
 
+const computeQuantile = (
+  df: dfd.DataFrame,
+  columnName: string,
+  q: number
+): number => {
+  const sortedValues = df.sortValues(columnName)[columnName].values;
+  const pos = (sortedValues.length - 1) * q;
+  const base = Math.floor(pos);
+  const rest = pos - base;
+  if (sortedValues[base + 1] !== undefined) {
+    return (
+      sortedValues[base] + rest * (sortedValues[base + 1] - sortedValues[base])
+    );
+  } else {
+    return sortedValues[base];
+  }
+};
+
+const convertRatingsToRecommenndedItems = (
+  ratings: MyRatingWithGenreAsString[]
+): RecommendedItem[] => {
+  return ratings.map((rating) => ({
+    ...rating.item,
+    rating: rating.rating,
+  }));
+};
+
+const getRecommendedItemsFormIds = (
+  ratings: MyRatingWithGenreAsString[],
+  recommendedItemsIds: number[]
+): RecommendedItem[] => {
+  let recommendedItems: RecommendedItem[] = [];
+  for (let itemId of recommendedItemsIds) {
+    const recommendedItem = ratings.find((rating) => rating.itemId === itemId);
+    if (recommendedItem) {
+      recommendedItems.push(
+        convertRatingsToRecommenndedItems([recommendedItem])[0]
+      );
+    }
+  }
+  return recommendedItems;
+};
+
+const computeRecommendedItems = async (
+  user: User,
+  ratings: MyRatingWithGenreAsString[]
+): Promise<RecommendedItem[]> => {
+  let recommendedItemsIds: number[] = [];
+
+  const minAge = Math.trunc(user.age / 10) * 10;
+  const maxAge = minAge + 9;
+  const filteredRatings = ratings.filter(
+    (rating) =>
+      rating.userId !== user.id &&
+      rating.user.age >= minAge &&
+      rating.user.age <= maxAge &&
+      rating.user.gender === user.gender &&
+      rating.user.occupation === user.occupation
+  );
+  let ratingsDf = new dfd.DataFrame(filteredRatings);
+
+  if (filteredRatings.length === 0) {
+    recommendedItemsIds = (await new dfd.DataFrame(ratings).sample(5))['itemId']
+      .values as number[];
+    return getRecommendedItemsFormIds(ratings, recommendedItemsIds);
+  }
+
+  ratingsDf = ratingsDf
+    .groupby(['itemId'])
+    .agg({ rating: ['mean', 'count'] }) as dfd.DataFrame;
+  const c = ratingsDf['rating_mean'].mean();
+  const m = computeQuantile(ratingsDf, 'rating_count', 0.9);
+
+  const computeWeightedRating = (row: number[]): number => {
+    const v = row[2];
+    const r = row[1];
+    return (v / (v + m)) * r + (m / (m + v)) * c;
+  };
+  ratingsDf.addColumn(
+    'score',
+    ratingsDf.apply(computeWeightedRating).values as number[],
+    { inplace: true }
+  );
+  ratingsDf = ratingsDf
+    .sortValues('score', { ascending: false })
+    .head(5) as dfd.DataFrame;
+  recommendedItemsIds = ratingsDf['itemId'].values as number[];
+  for (let itemId of recommendedItemsIds) {
+    const recommendedItem = ratings.find((rating) => rating.itemId === itemId);
+    if (recommendedItem) {
+      recommendedItem.rating = ratingsDf.loc({
+        rows: ratingsDf['itemId'].eq(recommendedItem.itemId),
+      })['score'].values[0];
+    }
+  }
+  return getRecommendedItemsFormIds(ratings, recommendedItemsIds);
+};
+
 export const getServerSideProps: GetServerSideProps<ServerSideProps> = async ({
   req,
   res,
 }) => {
   const session = await getSession({ req });
-  let ratings: (Rating & {
-    item: Item & {
-      genres: string[];
-    };
-  })[] = [];
-  let preferences: (Preference & {
-    genre: Genre;
-  })[] = [];
-  let neighbours: (Neighborhood & {
-    rightUser: User & {
-      ratings: (Rating & {
-        item: Item & {
-          genres: string[];
-        };
-      })[];
-    };
-  })[] = [];
+  let recommendedItems: RecommendedItem[] = [];
+  let preferences: MyPreference[] = [];
 
   if (session) {
-    ratings = convertGenresToString(await getRatings(session.user.id));
+    const ratings = convertGenresToString(await getRatings());
+    recommendedItems = await computeRecommendedItems(session.user, ratings);
+
     preferences = await getPreferences(session.user.id);
-    neighbours = (await getNeighborhood(session.user.id)).map((neighbour) => ({
-      ...neighbour,
-      rightUser: {
-        ...neighbour.rightUser,
-        ratings: convertGenresToString(neighbour.rightUser.ratings),
-      },
-    }));
   } else {
     res.statusCode = 403;
   }
 
   return {
-    props: { ratings, preferences, neighbours },
+    props: { recommendedItems, preferences },
   };
 };
 

@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { GetServerSideProps, NextPage } from 'next';
 import { useSession, signOut, getSession } from 'next-auth/react';
 import {
@@ -11,31 +10,44 @@ import {
   User,
 } from '@prisma/client';
 import styled from 'styled-components';
-import { Col, Row } from 'antd';
+import { Col, PageHeader, Row } from 'antd';
 
-import { getRatings } from '../api/rating';
+import { getMyRatings } from '../api/my-ratings';
 import { getPreferences } from '../api/preference';
 import { getNeighborhood } from '../api/neighborhood';
 import { Footer, Header } from '../../frontend/components/shared';
 
+type RecommendedItem = Item & {
+  rating: number;
+};
+
+type MyPreference = Preference & {
+  genre: Genre;
+};
+
+type MyRating = Rating & {
+  item: Item & {
+    genres: (GenresOnItems & {
+      genre: Genre;
+    })[];
+  };
+};
+
+type MyRatingWithGenreAsString = Rating & {
+  item: Item & {
+    genres: string[];
+  };
+};
+
+type MyNeighborhood = Neighborhood & {
+  rightUser: User & {
+    ratings: MyRatingWithGenreAsString[];
+  };
+};
+
 type ServerSideProps = {
-  ratings: (Rating & {
-    item: Item & {
-      genres: string[];
-    };
-  })[];
-  preferences: (Preference & {
-    genre: Genre;
-  })[];
-  neighbours: (Neighborhood & {
-    rightUser: User & {
-      ratings: (Rating & {
-        item: Item & {
-          genres: string[];
-        };
-      })[];
-    };
-  })[];
+  recommendedItems: RecommendedItem[];
+  preferences: MyPreference[];
 };
 
 type Props = ServerSideProps;
@@ -55,19 +67,78 @@ const Content = styled.main`
 `;
 
 const CollaborativePage: NextPage<Props> = ({
-  ratings,
+  recommendedItems,
   preferences,
-  neighbours,
 }) => {
   const { data } = useSession();
 
-  const [recommendedItems, setRecommendedItems] = useState<
-    (Item & {
-      rating: number;
-    })[]
-  >([]);
+  return (
+    <Layout>
+      <Header userId={data?.user.id} signOut={signOut} />
 
-  useEffect(() => {
+      <Content>
+        <PageHeader title="Recomendador colaborativo" />
+
+        <Row>
+          <Col span={12}>
+            <pre>
+              {JSON.stringify(
+                {
+                  ...data,
+                  myPreferences: preferences,
+                },
+                null,
+                2
+              )}
+            </pre>
+          </Col>
+          <Col span={12}>
+            <pre>{JSON.stringify(recommendedItems, null, 2)}</pre>
+          </Col>
+        </Row>
+      </Content>
+
+      <Footer />
+    </Layout>
+  );
+};
+
+const convertGenresToString = (ratings: MyRating[]) => {
+  return ratings.map((rating) => ({
+    ...rating,
+    item: {
+      id: rating.item.id,
+      title: rating.item.title,
+      genres: rating.item.genres.map((genre) => genre.genre.name),
+    },
+  }));
+};
+
+export const getServerSideProps: GetServerSideProps<ServerSideProps> = async ({
+  req,
+  res,
+}) => {
+  const session = await getSession({ req });
+  let recommendedItems: RecommendedItem[] = [];
+  let preferences: (Preference & {
+    genre: Genre;
+  })[] = [];
+
+  if (session) {
+    const ratings: MyRatingWithGenreAsString[] = convertGenresToString(
+      await getMyRatings(session.user.id)
+    );
+    preferences = await getPreferences(session.user.id);
+    const neighbours: MyNeighborhood[] = (
+      await getNeighborhood(session.user.id)
+    ).map((neighbour) => ({
+      ...neighbour,
+      rightUser: {
+        ...neighbour.rightUser,
+        ratings: convertGenresToString(neighbour.rightUser.ratings),
+      },
+    }));
+
     const neighboursRatings = neighbours
       .map((neighbour) =>
         neighbour.rightUser.ratings.map((rating) => ({
@@ -104,98 +175,15 @@ const CollaborativePage: NextPage<Props> = ({
       }
       itemWithRating.rating += neighbourRating.rating;
     }
-    setRecommendedItems(
-      [...itemsWithRating].sort((a, b) => b.rating - a.rating).slice(0, 5)
-    );
-  }, [ratings, neighbours]);
-
-  return (
-    <Layout>
-      <Header userId={data?.user.id} signOut={signOut} />
-
-      <Content>
-        <Row>
-          <Col span={12}>
-            <pre>
-              {JSON.stringify(
-                {
-                  ...data,
-                  myPreferences: preferences,
-                },
-                null,
-                2
-              )}
-            </pre>
-          </Col>
-          <Col span={12}>
-            <pre>{JSON.stringify(recommendedItems, null, 2)}</pre>
-          </Col>
-        </Row>
-      </Content>
-
-      <Footer />
-    </Layout>
-  );
-};
-
-const convertGenresToString = (
-  ratings: (Rating & {
-    item: Item & {
-      genres: (GenresOnItems & {
-        genre: Genre;
-      })[];
-    };
-  })[]
-) => {
-  return ratings.map((rating) => ({
-    ...rating,
-    item: {
-      id: rating.item.id,
-      title: rating.item.title,
-      genres: rating.item.genres.map((genre) => genre.genre.name),
-    },
-  }));
-};
-
-export const getServerSideProps: GetServerSideProps<ServerSideProps> = async ({
-  req,
-  res,
-}) => {
-  const session = await getSession({ req });
-  let ratings: (Rating & {
-    item: Item & {
-      genres: string[];
-    };
-  })[] = [];
-  let preferences: (Preference & {
-    genre: Genre;
-  })[] = [];
-  let neighbours: (Neighborhood & {
-    rightUser: User & {
-      ratings: (Rating & {
-        item: Item & {
-          genres: string[];
-        };
-      })[];
-    };
-  })[] = [];
-
-  if (session) {
-    ratings = convertGenresToString(await getRatings(session.user.id));
-    preferences = await getPreferences(session.user.id);
-    neighbours = (await getNeighborhood(session.user.id)).map((neighbour) => ({
-      ...neighbour,
-      rightUser: {
-        ...neighbour.rightUser,
-        ratings: convertGenresToString(neighbour.rightUser.ratings),
-      },
-    }));
+    recommendedItems = [...itemsWithRating]
+      .sort((a, b) => b.rating - a.rating)
+      .slice(0, 5);
   } else {
     res.statusCode = 403;
   }
 
   return {
-    props: { ratings, preferences, neighbours },
+    props: { recommendedItems, preferences },
   };
 };
 

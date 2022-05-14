@@ -4,22 +4,29 @@ import { Genre, GenresOnItems, Item, Rating } from '@prisma/client';
 
 import prisma from '../../libs/prisma';
 
-export const getRatings = async (
-  userId: number
-): Promise<
+export const getRatings = async (): Promise<
   (Rating & {
     item: Item & {
       genres: (GenresOnItems & {
         genre: Genre;
       })[];
     };
+    user: {
+      age: number;
+      gender: string;
+      occupation: string;
+    };
   })[]
 > => {
   return prisma.rating.findMany({
-    where: {
-      userId,
-    },
     include: {
+      user: {
+        select: {
+          age: true,
+          gender: true,
+          occupation: true,
+        },
+      },
       item: {
         include: {
           genres: {
@@ -33,7 +40,7 @@ export const getRatings = async (
   });
 };
 
-const rating = async (req: NextApiRequest, res: NextApiResponse) => {
+const ratings = async (req: NextApiRequest, res: NextApiResponse) => {
   const session = await getSession({ req });
 
   if (!session) {
@@ -41,7 +48,7 @@ const rating = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
-  res.json(await getRatings(session.user.id));
+  res.json(await getRatings());
 };
 
-export default rating;
+export default ratings;
