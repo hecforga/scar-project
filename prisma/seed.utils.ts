@@ -83,7 +83,7 @@ const computePreferenceValue = (
   multiplier: number,
   minPreferenceValue: number
 ): number => {
-  return Math.floor(
-    (currentCount - minCount) * multiplier + minPreferenceValue
-  );
+  const value = (currentCount - minCount) * multiplier + minPreferenceValue;
+  const randomizedValue = value * (Math.random() * 0.1 + 0.9);
+  return Math.floor(randomizedValue);
 };

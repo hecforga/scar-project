@@ -23,6 +23,17 @@ export const getMyRatings = async (userId: number): Promise<MyRating[]> => {
   });
 };
 
+export const convertGenresToString = (ratings: MyRating[]) => {
+  return ratings.map((rating) => ({
+    ...rating,
+    item: {
+      id: rating.item.id,
+      title: rating.item.title,
+      genres: rating.item.genres.map((genre) => genre.genre.name),
+    },
+  }));
+};
+
 const myRatings = async (req: NextApiRequest, res: NextApiResponse) => {
   const session = await getSession({ req });
 

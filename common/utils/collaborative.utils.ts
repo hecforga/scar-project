@@ -1,18 +1,7 @@
 import { RecommendedItem } from '../model/item.model';
-import { MyRating, MyRatingWithGenreAsString } from '../model/rating.model';
+import { MyRatingWithGenreAsString } from '../model/rating.model';
 import { MyNeighborhood } from '../model/neighborhood.model';
 import { Item } from '@prisma/client';
-
-export const convertGenresToString = (ratings: MyRating[]) => {
-  return ratings.map((rating) => ({
-    ...rating,
-    item: {
-      id: rating.item.id,
-      title: rating.item.title,
-      genres: rating.item.genres.map((genre) => genre.genre.name),
-    },
-  }));
-};
 
 export const computeRecommendedItems = (
   ratings: MyRatingWithGenreAsString[],
@@ -42,15 +31,28 @@ export const computeRecommendedItems = (
   const itemsWithRating: (Item & {
     genres: string[];
     rating: number;
+    times: number;
   })[] = [];
   for (let neighbourRating of neighboursRatings) {
     const itemWithRating = itemsWithRating.find(
       (item) => item.id === neighbourRating.itemId
-    ) || { ...neighbourRating.item, rating: 0 };
-    if (itemWithRating.rating === 0) {
-      itemsWithRating.push(itemWithRating);
+    );
+    if (itemWithRating) {
+      itemWithRating.rating =
+        (neighbourRating.rating + itemWithRating.rating) / 1.9;
+      itemWithRating.times += 1;
+    } else {
+      itemsWithRating.push({
+        ...neighbourRating.item,
+        rating: neighbourRating.rating,
+        times: 1,
+      });
     }
-    itemWithRating.rating += neighbourRating.rating;
+  }
+  const maxTimes = [...itemsWithRating].sort((a, b) => b.times - a.times)[0]
+    .times;
+  for (let itemWithRating of itemsWithRating) {
+    itemWithRating.rating = itemWithRating.rating * 0.95 ** maxTimes;
   }
   return [...itemsWithRating].sort((a, b) => b.rating - a.rating).slice(0, 6);
 };

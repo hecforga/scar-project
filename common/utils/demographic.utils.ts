@@ -2,18 +2,8 @@ import { DataFrame } from 'danfojs';
 import { Rating, User } from '@prisma/client';
 
 import { MyItem, RecommendedItem } from '../model/item.model';
-import { MyRating, MyRatingWithGenreAsString } from '../model/rating.model';
-
-export const convertGenresToString = (ratings: MyRating[]) => {
-  return ratings.map((rating) => ({
-    ...rating,
-    item: {
-      id: rating.item.id,
-      title: rating.item.title,
-      genres: rating.item.genres.map((genre) => genre.genre.name),
-    },
-  }));
-};
+import { MyRatingWithGenreAsString } from '../model/rating.model';
+import { convertGenresToString } from '../../pages/api/ratings';
 
 const computeQuantile = (
   df: DataFrame,

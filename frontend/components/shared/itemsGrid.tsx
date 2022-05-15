@@ -7,13 +7,19 @@ import ItemCard from './itemCard';
 type Props = {
   items: RecommendedItem[];
   posters: string[];
+  isRating?: boolean;
   className?: string;
 };
 
-const ItemsGrid: React.FC<Props> = ({ items, posters, className }) => {
+const ItemsGrid: React.FC<Props> = ({
+  items,
+  posters,
+  isRating,
+  className,
+}) => {
   return (
     <div className={className}>
-      <Descriptions title="Recomendaciones" />
+      <Descriptions title={isRating ? 'Mis favoritos' : 'Recomendaciones'} />
 
       <Row gutter={[24, 24]}>
         {items.map((item, i) => (

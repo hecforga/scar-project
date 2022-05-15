@@ -129,11 +129,13 @@ const populateRatings = async () => {
   }
   for (const userId of usersIds) {
     const preferencesData = computePreferences(userId, genreCounterMap[userId]);
-    for (const p of preferencesData) {
-      await prisma.preference.create({
-        data: p,
-      });
-    }
+    await Promise.all(
+      preferencesData.map((p) =>
+        prisma.preference.create({
+          data: p,
+        })
+      )
+    );
   }
 };
 

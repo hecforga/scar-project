@@ -5,11 +5,18 @@ import styled from 'styled-components';
 import { Col, PageHeader, Row } from 'antd';
 
 import { getRatings } from '../api/ratings';
+import { convertGenresToString, getMyRatings } from '../api/my-ratings';
 import { getPreferences } from '../api/preference';
+import { getNeighborhood } from '../api/neighborhood';
 import { getItems } from '../api/items';
 import { getUsers } from '../api/users';
 import { RecommendedItem } from '../../common/model/item.model';
+import {
+  getRatingsAsRecommendedItems,
+  MyRatingWithGenreAsString,
+} from '../../common/model/rating.model';
 import { MyPreference } from '../../common/model/preference.model';
+import { MyNeighborhood } from '../../common/model/neighborhood.model';
 import { computeRecommendedItems } from '../../common/utils/demographic.utils';
 import usePosterService from '../../frontend/services/posterService';
 import {
@@ -22,6 +29,8 @@ import {
 type ServerSideProps = {
   recommendedItems: RecommendedItem[];
   preferences: MyPreference[];
+  neighbours: MyNeighborhood[];
+  ratings: MyRatingWithGenreAsString[];
 };
 
 type Props = ServerSideProps;
@@ -45,6 +54,8 @@ const Content = styled.main`
 const DemographicPage: NextPage<Props> = ({
   recommendedItems,
   preferences,
+  neighbours,
+  ratings,
 }) => {
   const { data } = useSession();
   const posterService = usePosterService();
@@ -54,16 +65,19 @@ const DemographicPage: NextPage<Props> = ({
   useEffect(() => {
     const fetchPosters = async (): Promise<void> => {
       const auxPosters: string[] = [];
-      for (let recommendedItem of recommendedItems) {
+      for (let recommendedItem of [
+        ...recommendedItems,
+        ...getRatingsAsRecommendedItems(ratings),
+      ]) {
         auxPosters.push(await posterService.getPoster(recommendedItem.title));
       }
       setPosters(auxPosters);
     };
 
     fetchPosters();
-  }, [recommendedItems, posterService]);
+  }, [recommendedItems, ratings, posterService]);
 
-  if (!data || posters.length !== recommendedItems.length) {
+  if (!data || posters.length !== recommendedItems.length + ratings.length) {
     return null;
   }
 
@@ -76,7 +90,17 @@ const DemographicPage: NextPage<Props> = ({
 
         <Row gutter={32}>
           <Col span={12}>
-            <UserInfo user={data.user} preferences={preferences} />
+            <UserInfo
+              user={data.user}
+              preferences={preferences}
+              neighbours={neighbours}
+            />
+            <br />
+            <ItemsGrid
+              items={getRatingsAsRecommendedItems(ratings)}
+              posters={posters}
+              isRating={true}
+            />
           </Col>
 
           <Col span={12}>
@@ -97,6 +121,8 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async ({
   const session = await getSession({ req });
   let recommendedItems: RecommendedItem[] = [];
   let preferences: MyPreference[] = [];
+  let neighbours: MyNeighborhood[] = [];
+  let myRatings: MyRatingWithGenreAsString[] = [];
 
   if (session) {
     const ratings = await getRatings();
@@ -110,12 +136,23 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async ({
     );
 
     preferences = await getPreferences(session.user.id);
+    neighbours = (await getNeighborhood(session.user.id)).map((neighbour) => ({
+      ...neighbour,
+      rightUser: {
+        ...neighbour.rightUser,
+        ratings: convertGenresToString(neighbour.rightUser.ratings),
+      },
+    }));
+
+    myRatings = convertGenresToString(await getMyRatings(session.user.id))
+      .filter((r) => r.rating === 5)
+      .slice(0, 4);
   } else {
     res.statusCode = 403;
   }
 
   return {
-    props: { recommendedItems, preferences },
+    props: { recommendedItems, preferences, neighbours, ratings: myRatings },
   };
 };
 

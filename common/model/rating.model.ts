@@ -23,3 +23,13 @@ export type MyRatingWithGenreAsString = Rating & {
     occupation: string;
   };
 };
+
+export const getRatingsAsRecommendedItems = (
+  ratings: MyRatingWithGenreAsString[]
+) => {
+  return ratings.map((r) => ({
+    ...r.item,
+    genres: r.item.genres,
+    rating: r.rating,
+  }));
+};
