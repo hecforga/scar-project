@@ -1,6 +1,6 @@
 import path from 'path';
 import { PrismaClient, Prisma, Rating } from '@prisma/client';
-import { readCSV, toJSON } from 'danfojs-node';
+import { readCSV, toJSON } from 'danfojs';
 
 import { JSONObject } from '../common/model/json.model';
 import {

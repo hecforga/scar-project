@@ -1,4 +1,4 @@
-import { DataFrame } from 'danfojs-node';
+import { DataFrame } from 'danfojs';
 import { Rating, User } from '@prisma/client';
 
 import { MyItem, RecommendedItem } from '../model/item.model';
