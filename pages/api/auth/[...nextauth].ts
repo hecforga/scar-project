@@ -23,7 +23,7 @@ export default NextAuth({
 
         let user;
         try {
-          user = prisma.user.findFirst({
+          user = await prisma.user.findFirst({
             where: {
               id: +credentials.username,
             },
@@ -50,7 +50,13 @@ export default NextAuth({
   },
   callbacks: {
     async session({ session, token }) {
-      session.user = token.user as User;
+      session.user =
+        (token.user as User) &&
+        ((await prisma.user.findFirst({
+          where: {
+            id: (token.user as User).id,
+          },
+        })) as User);
       return session;
     },
     async jwt({ token, user }) {

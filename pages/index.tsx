@@ -1,29 +1,21 @@
-import { useEffect } from 'react';
 import { GetStaticProps, NextPage } from 'next';
+import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
 import { Prisma } from '@prisma/client';
-import styled, { DefaultTheme, withTheme } from 'styled-components';
-import debounce from 'lodash.debounce';
+import styled from 'styled-components';
+import { Button, PageHeader, Result } from 'antd';
 
 import prisma from '../libs/prisma';
 import { getItems } from './api/items';
 import { MyItem } from '../common/model/item.model';
-import { INeighbour } from '../common/model/neighborhood.model';
 import { computeNeighboursMatrix } from '../common/utils/neighbours.utils';
-import { Footer, Header, ProfileForm } from '../frontend/components/shared';
+import { Footer, Header } from '../frontend/components/shared';
 
 type StaticProps = {
   feed: MyItem[];
-  neighboursMatrix: Record<number, INeighbour[]>;
 };
 
-type Props = StaticProps & {
-  theme: DefaultTheme;
-};
-
-const layoutId = 'scarLayoutId';
-const registerSectionId = 'scarRegisterSection';
-const scrollableSectionId = 'scarScrollableSection';
+type Props = StaticProps;
 
 const Layout = styled.div`
   display: flex;
@@ -43,104 +35,57 @@ const Content = styled.main`
     `calc(var(--vh, 1vh) * 100 - ${props.theme.headerHeight} - ${props.theme.footerHeight})`};
 `;
 
-const RegisterSection = styled.div`
-  background-color: grey;
-  position: fixed;
-  top: ${(props) => props.theme.headerHeight};
-  bottom: 0;
-  left: ${(props) => props.theme.grid.getGridColumns(14, -1)};
-  right: 0;
-  z-index: 10;
-`;
+const HomePage: NextPage<Props> = () => {
+  const { data, status } = useSession();
 
-const ScrollableSection = styled.div`
-  position: relative;
-  width: ${(props) => props.theme.grid.getGridColumns(14, -1)};
-  background-color: white;
-  z-index: 20;
-`;
-
-const HomePage: NextPage<Props> = ({ feed, neighboursMatrix, theme }) => {
-  const { data } = useSession();
-
-  const register = () => {
-    console.log('register');
-  };
-
-  const handleScroll = () => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const headerHeight = +theme.headerHeight.replace('px', '');
-    const footerHeight = +theme.footerHeight.replace('px', '');
-
-    const layoutElement = document.getElementById(layoutId);
-
-    const registerSectionElement = document.getElementById(registerSectionId);
-    if (layoutElement && registerSectionElement) {
-      const ammountOfHeaderVisible = headerHeight - window.scrollY;
-      if (ammountOfHeaderVisible > 0) {
-        registerSectionElement.style.setProperty(
-          'top',
-          `${ammountOfHeaderVisible}px`
-        );
-      }
-      if (ammountOfHeaderVisible <= 0) {
-        registerSectionElement.style.setProperty('top', '0');
-      }
-
-      const ammountOfFooterVisible =
-        window.scrollY +
-        window.innerHeight +
-        footerHeight -
-        layoutElement.clientHeight;
-      if (ammountOfFooterVisible > 0) {
-        registerSectionElement.style.setProperty(
-          'bottom',
-          `${ammountOfFooterVisible}px`
-        );
-      }
-      if (ammountOfFooterVisible <= 0) {
-        registerSectionElement.style.setProperty('bottom', '0');
-      }
-    }
-  };
-  const debouncedHandleScroll = debounce(handleScroll, 10, {
-    leading: true,
-    trailing: true,
-  });
-
-  useEffect(() => {
-    window.addEventListener('scroll', () => debouncedHandleScroll());
-
-    return () =>
-      window.removeEventListener('scroll', () => debouncedHandleScroll());
-  });
+  if (status === 'loading') {
+    return null;
+  }
 
   return (
-    <Layout id={layoutId}>
+    <Layout>
       <Header userId={data?.user.id} signOut={signOut} />
 
       <Content>
-        <RegisterSection id={registerSectionId}>
-          {data ? (
-            <div>
-              Use el menú superior para navegar entre los diferentes tipos de
-              recomendación
-            </div>
-          ) : (
-            <ProfileForm onFinish={register} />
-          )}
-        </RegisterSection>
-        <ScrollableSection id={scrollableSectionId}>
-          <div style={{ height: '1000px' }}>
-            {feed.map((item) => (
-              <div key={item.id}>{item.id}</div>
-            ))}
-            <div>{JSON.stringify(neighboursMatrix[1])}</div>
+        <PageHeader
+          title="Bienvenido al recomendador de películas SCAR"
+          subTitle="(desarrollado por Héctor Fornes Gabaldón en la UPV)"
+        />
+
+        {data ? (
+          <div>
+            <Result
+              status="success"
+              title="Has iniciado sesión correctamente"
+              subTitle="Utilice los botones de abajo o los del menú superior para probar los diferentes recomendadores"
+              extra={[
+                <Link key="demographic" href="/me/demographic" passHref>
+                  <Button type="default">Demográfico</Button>
+                </Link>,
+                <Link key="collaborative" href="/me/collaborative" passHref>
+                  <Button type="default">Colaborativo</Button>
+                </Link>,
+              ]}
+            />
           </div>
-        </ScrollableSection>
+        ) : (
+          <Result
+            status="warning"
+            title="No has iniciado sesión"
+            subTitle="Utilice los siguientes botones para iniciar sesión o crear una cuenta"
+            extra={[
+              <a
+                key="signIn"
+                href={`${window.location.href}api/auth/signin?callbackUrl=${window.location.href}`}
+              >
+                <Button type="default">Iniciar sesión</Button>
+              </a>,
+              <Link key="register" href="/register" passHref>
+                <Button type="default">Crear una cuenta</Button>
+              </Link>,
+            ]}
+          />
+        )}
       </Content>
 
       <Footer />
@@ -179,9 +124,8 @@ export const getStaticProps: GetStaticProps<StaticProps> = async () => {
   return {
     props: {
       feed,
-      neighboursMatrix,
     },
   };
 };
 
-export default withTheme(HomePage);
+export default HomePage;
