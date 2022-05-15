@@ -1,4 +1,4 @@
-import * as dfd from 'danfojs-node';
+import { DataFrame } from 'danfojs-node';
 import { Rating, User } from '@prisma/client';
 
 import { MyItem, RecommendedItem } from '../model/item.model';
@@ -16,7 +16,7 @@ export const convertGenresToString = (ratings: MyRating[]) => {
 };
 
 const computeQuantile = (
-  df: dfd.DataFrame,
+  df: DataFrame,
   columnName: string,
   q: number
 ): number => {
@@ -93,18 +93,17 @@ export const computeRecommendedItems = async (
       ratingUser.occupation === user.occupation
     );
   });
-  let ratingsDf = new dfd.DataFrame(filteredRatings);
+  let ratingsDf = new DataFrame(filteredRatings);
 
   if (filteredRatings.length === 0) {
-    recommendedItemsIds = (await new dfd.DataFrame(myRatings).sample(6))[
-      'itemId'
-    ].values as number[];
+    recommendedItemsIds = (await new DataFrame(myRatings).sample(6))['itemId']
+      .values as number[];
     return getRecommendedItemsFormIds(myRatings, recommendedItemsIds);
   }
 
   ratingsDf = ratingsDf
     .groupby(['itemId'])
-    .agg({ rating: ['mean', 'count'] }) as dfd.DataFrame;
+    .agg({ rating: ['mean', 'count'] }) as DataFrame;
   const c = ratingsDf['rating_mean'].mean();
   const m = computeQuantile(ratingsDf, 'rating_count', 0.9);
 
@@ -120,7 +119,7 @@ export const computeRecommendedItems = async (
   );
   ratingsDf = ratingsDf
     .sortValues('score', { ascending: false })
-    .head(6) as dfd.DataFrame;
+    .head(6) as DataFrame;
   recommendedItemsIds = ratingsDf['itemId'].values as number[];
   for (let itemId of recommendedItemsIds) {
     const recommendedItem = myRatings.find(

@@ -16,7 +16,12 @@ import {
   convertGenresToString,
 } from '../../common/utils/collaborative.utils';
 import usePosterService from '../../frontend/services/posterService';
-import { Footer, Header, ItemsGrid } from '../../frontend/components/shared';
+import {
+  Footer,
+  Header,
+  ItemsGrid,
+  UserInfo,
+} from '../../frontend/components/shared';
 
 type ServerSideProps = {
   recommendedItems: RecommendedItem[];
@@ -62,7 +67,7 @@ const CollaborativePage: NextPage<Props> = ({
     fetchPosters();
   }, [recommendedItems, posterService]);
 
-  if (posters.length !== recommendedItems.length) {
+  if (!data || posters.length !== recommendedItems.length) {
     return null;
   }
 
@@ -73,19 +78,11 @@ const CollaborativePage: NextPage<Props> = ({
       <Content>
         <PageHeader title="Recomendador colaborativo" />
 
-        <Row>
+        <Row gutter={32}>
           <Col span={12}>
-            <pre>
-              {JSON.stringify(
-                {
-                  ...data,
-                  myPreferences: preferences,
-                },
-                null,
-                2
-              )}
-            </pre>
+            <UserInfo user={data.user} preferences={preferences} />
           </Col>
+
           <Col span={12}>
             <ItemsGrid items={recommendedItems} posters={posters} />
           </Col>

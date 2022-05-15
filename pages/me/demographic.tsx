@@ -12,7 +12,12 @@ import { RecommendedItem } from '../../common/model/item.model';
 import { MyPreference } from '../../common/model/preference.model';
 import { computeRecommendedItems } from '../../common/utils/demographic.utils';
 import usePosterService from '../../frontend/services/posterService';
-import { Footer, Header, ItemsGrid } from '../../frontend/components/shared';
+import {
+  Footer,
+  Header,
+  ItemsGrid,
+  UserInfo,
+} from '../../frontend/components/shared';
 
 type ServerSideProps = {
   recommendedItems: RecommendedItem[];
@@ -58,7 +63,7 @@ const DemographicPage: NextPage<Props> = ({
     fetchPosters();
   }, [recommendedItems, posterService]);
 
-  if (posters.length !== recommendedItems.length) {
+  if (!data || posters.length !== recommendedItems.length) {
     return null;
   }
 
@@ -69,19 +74,11 @@ const DemographicPage: NextPage<Props> = ({
       <Content>
         <PageHeader title="Recomendador demográfico" />
 
-        <Row>
+        <Row gutter={32}>
           <Col span={12}>
-            <pre>
-              {JSON.stringify(
-                {
-                  ...data,
-                  myPreferences: preferences,
-                },
-                null,
-                2
-              )}
-            </pre>
+            <UserInfo user={data.user} preferences={preferences} />
           </Col>
+
           <Col span={12}>
             <ItemsGrid items={recommendedItems} posters={posters} />
           </Col>

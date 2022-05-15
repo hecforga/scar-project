@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { Col, Row } from 'antd';
+import { Col, Descriptions, Row } from 'antd';
 
 import { RecommendedItem } from '../../../common/model/item.model';
 import ItemCard from './itemCard';
@@ -13,6 +13,8 @@ type Props = {
 const ItemsGrid: React.FC<Props> = ({ items, posters, className }) => {
   return (
     <div className={className}>
+      <Descriptions title="Recomendaciones" />
+
       <Row gutter={[24, 24]}>
         {items.map((item, i) => (
           <Col key={item.id} span={12}>
