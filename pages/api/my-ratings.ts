@@ -1,20 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from 'next-auth/react';
-import { Genre, GenresOnItems, Item, Rating } from '@prisma/client';
 
 import prisma from '../../libs/prisma';
+import { MyRating } from '../../common/model/rating.model';
 
-export const getMyRatings = async (
-  userId: number
-): Promise<
-  (Rating & {
-    item: Item & {
-      genres: (GenresOnItems & {
-        genre: Genre;
-      })[];
-    };
-  })[]
-> => {
+export const getMyRatings = async (userId: number): Promise<MyRating[]> => {
   return prisma.rating.findMany({
     where: {
       userId,

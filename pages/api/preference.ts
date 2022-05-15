@@ -1,16 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from 'next-auth/react';
-import { Genre, Preference } from '@prisma/client';
 
 import prisma from '../../libs/prisma';
+import { MyPreference } from '../../common/model/preference.model';
 
 export const getPreferences = async (
   userId: number
-): Promise<
-  (Preference & {
-    genre: Genre;
-  })[]
-> => {
+): Promise<MyPreference[]> => {
   return prisma.preference.findMany({
     where: {
       userId,

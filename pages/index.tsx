@@ -1,20 +1,19 @@
 import { useEffect } from 'react';
 import { GetStaticProps, NextPage } from 'next';
 import { signOut, useSession } from 'next-auth/react';
-import { Item, Prisma, Rating } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import styled, { DefaultTheme, withTheme } from 'styled-components';
 import debounce from 'lodash.debounce';
 
 import prisma from '../libs/prisma';
-import { getFeed } from './api/feed';
-import { INeighbour } from '../common/model/neighbour.model';
-import { Footer, Header, ProfileForm } from '../frontend/components/shared';
+import { getItems } from './api/items';
+import { MyItem } from '../common/model/item.model';
+import { INeighbour } from '../common/model/neighborhood.model';
 import { computeNeighboursMatrix } from '../common/utils/neighbours.utils';
+import { Footer, Header, ProfileForm } from '../frontend/components/shared';
 
 type StaticProps = {
-  feed: (Item & {
-    ratings: Rating[];
-  })[];
+  feed: MyItem[];
   neighboursMatrix: Record<number, INeighbour[]>;
 };
 
@@ -150,7 +149,7 @@ const HomePage: NextPage<Props> = ({ feed, neighboursMatrix, theme }) => {
 };
 
 export const getStaticProps: GetStaticProps<StaticProps> = async () => {
-  const feed = await getFeed();
+  const feed = await getItems(6);
 
   const users = await prisma.user.findMany({
     include: {

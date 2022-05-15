@@ -1,6 +1,6 @@
 import { Genre, Preference, User } from '@prisma/client';
 
-import { INeighbour } from '../model/neighbour.model';
+import { INeighbour } from '../model/neighborhood.model';
 
 export const computeNeighboursMatrix = (
   users: (User & {
