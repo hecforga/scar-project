@@ -76,11 +76,11 @@ const ProfilePage: NextPage<Props> = ({ ratings }) => {
 
         <Row gutter={[32, 24]} justify="center">
           <Col span={12}>
-            <ProfileForm user={user} onUserChange={setUser} />
+            <ProfileForm user={user} onUserChange={(u) => setUser(u as User)} />
           </Col>
 
           <Col span={12}>
-            <RatingsEditor ratings={ratings} onRatingAdd={() => null} />
+            <RatingsEditor ratings={ratings} />
           </Col>
 
           <Col span={8}>

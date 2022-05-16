@@ -1,13 +1,8 @@
 import path from 'path';
-import { PrismaClient, Prisma, Rating } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { readCSV, toJSON } from 'danfojs';
 
 import { JSONObject } from '../common/model/json.model';
-import {
-  computeGenreCounters,
-  computePreferences,
-  GenreCounter,
-} from './seed.utils';
 
 const prisma = new PrismaClient();
 
@@ -111,31 +106,10 @@ const populateRatings = async () => {
     },
   }));
 
-  const ratings: Rating[] = [];
   for (const r of ratingData) {
-    const rating = await prisma.rating.create({
+    await prisma.rating.create({
       data: r,
     });
-    ratings.push(rating);
-  }
-
-  const usersIds = [...new Set(ratings.map((rating) => rating.userId))];
-  const genreCounterMap: Record<number, GenreCounter[]> = {};
-  const genresCounters = await Promise.all(
-    usersIds.map((userId) => computeGenreCounters(userId, ratings))
-  );
-  for (let i = 0; i < usersIds.length; i++) {
-    genreCounterMap[usersIds[i]] = genresCounters[i];
-  }
-  for (const userId of usersIds) {
-    const preferencesData = computePreferences(userId, genreCounterMap[userId]);
-    await Promise.all(
-      preferencesData.map((p) =>
-        prisma.preference.create({
-          data: p,
-        })
-      )
-    );
   }
 };
 

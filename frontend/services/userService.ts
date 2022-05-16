@@ -1,14 +1,20 @@
+import { createContext, useContext } from 'react';
 import { User } from '@prisma/client';
 import axios from 'axios';
-import { createContext, useContext } from 'react';
+
+import { MyUserCreateInput } from '../../common/model/user.model';
 
 class UserService {
   private axiosInstance = axios.create({
     baseURL: '/api',
   });
 
+  async create(user: MyUserCreateInput): Promise<User> {
+    return (await this.axiosInstance.post<User>('user', user)).data;
+  }
+
   async update(user: User): Promise<User> {
-    return this.axiosInstance.put('user', user);
+    return (await this.axiosInstance.put<User>('user', user)).data;
   }
 }
 

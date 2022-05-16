@@ -2,9 +2,11 @@ import { User } from '@prisma/client';
 import styled from 'styled-components';
 import { Descriptions, Form, InputNumber, Select } from 'antd';
 
+import { MyUserCreateInput } from '../../../common/model/user.model';
+
 type Props = {
-  user: User;
-  onUserChange: (user: User) => void;
+  user: User | MyUserCreateInput;
+  onUserChange: (user: User | MyUserCreateInput) => void;
   className?: string;
 };
 

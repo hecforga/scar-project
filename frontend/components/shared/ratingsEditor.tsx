@@ -6,7 +6,7 @@ import { MyRatingWithGenreAsString } from '../../../common/model/rating.model';
 
 type Props = {
   ratings: MyRatingWithGenreAsString[];
-  onRatingAdd: (rating: Rating) => void;
+  onRatingAdd?: (rating: Rating) => void;
   className?: string;
 };
 

@@ -6,7 +6,13 @@ import styled from 'styled-components';
 import { Button, PageHeader, Result } from 'antd';
 
 import prisma from '../libs/prisma';
+import {
+  computeGenreCounters,
+  computePreferences,
+  GenreCounter,
+} from '../prisma/seed.utils';
 import { getItems } from './api/items';
+import { getRatings } from './api/ratings';
 import { MyItem } from '../common/model/item.model';
 import { computeNeighboursMatrix } from '../common/utils/neighbours.utils';
 import { Footer, Header } from '../frontend/components/shared';
@@ -56,7 +62,7 @@ const HomePage: NextPage<Props> = () => {
           <div>
             <Result
               status="success"
-              title="Has iniciado sesión correctamente"
+              title={`Has iniciado sesión correctamente (usuario ${data.user.id})`}
               subTitle="Utilice los botones de abajo o los del menú superior para probar los diferentes recomendadores"
               extra={[
                 <Link key="demographic" href="/me/demographic" passHref>
@@ -96,6 +102,28 @@ const HomePage: NextPage<Props> = () => {
 export const getStaticProps: GetStaticProps<StaticProps> = async () => {
   const feed = await getItems(6);
 
+  const ratings = await getRatings();
+  await prisma.preference.deleteMany();
+
+  const usersIds = [...new Set(ratings.map((rating) => rating.userId))];
+  const genreCounterMap: Record<number, GenreCounter[]> = {};
+  const genresCounters = await Promise.all(
+    usersIds.map((userId) => computeGenreCounters(userId, ratings))
+  );
+  for (let i = 0; i < usersIds.length; i++) {
+    genreCounterMap[usersIds[i]] = genresCounters[i];
+  }
+  for (const userId of usersIds) {
+    const preferencesData = computePreferences(userId, genreCounterMap[userId]);
+    await Promise.all(
+      preferencesData.map((p) =>
+        prisma.preference.create({
+          data: p,
+        })
+      )
+    );
+  }
+
   const users = await prisma.user.findMany({
     include: {
       preferences: true,
@@ -108,16 +136,18 @@ export const getStaticProps: GetStaticProps<StaticProps> = async () => {
     await prisma.neighborhood.deleteMany();
 
     for (let user of users) {
-      const data: Prisma.NeighborhoodCreateManyInput[] = neighboursMatrix[
-        user.id
-      ].map((neighbour) => ({
-        distance: neighbour.distance,
-        leftUserId: user.id,
-        rightUserId: neighbour.userId,
-      }));
-      await prisma.neighborhood.createMany({
-        data,
-      });
+      if (neighboursMatrix[user.id]) {
+        const data: Prisma.NeighborhoodCreateManyInput[] = neighboursMatrix[
+          user.id
+        ].map((neighbour) => ({
+          distance: neighbour.distance,
+          leftUserId: user.id,
+          rightUserId: neighbour.userId,
+        }));
+        await prisma.neighborhood.createMany({
+          data,
+        });
+      }
     }
   }
 
