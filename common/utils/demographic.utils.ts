@@ -1,9 +1,13 @@
 import { DataFrame } from 'danfojs';
 import { Rating, User } from '@prisma/client';
 
-import { MyItem, RecommendedItem } from '../model/item.model';
-import { MyRatingWithGenreAsString } from '../model/rating.model';
 import { convertGenresToString } from '../../pages/api/ratings';
+import {
+  getRecommendedItemsFormIds,
+  MyItem,
+  RecommendedItem,
+} from '../model/item.model';
+import { MyRatingWithGenreAsString } from '../model/rating.model';
 
 const computeQuantile = (
   df: DataFrame,
@@ -23,31 +27,6 @@ const computeQuantile = (
   }
 };
 
-const convertRatingsToRecommenndedItems = (
-  ratings: MyRatingWithGenreAsString[]
-): RecommendedItem[] => {
-  return ratings.map((rating) => ({
-    ...rating.item,
-    rating: rating.rating,
-  }));
-};
-
-const getRecommendedItemsFormIds = (
-  ratings: MyRatingWithGenreAsString[],
-  recommendedItemsIds: number[]
-): RecommendedItem[] => {
-  let recommendedItems: RecommendedItem[] = [];
-  for (let itemId of recommendedItemsIds) {
-    const recommendedItem = ratings.find((rating) => rating.itemId === itemId);
-    if (recommendedItem) {
-      recommendedItems.push(
-        convertRatingsToRecommenndedItems([recommendedItem])[0]
-      );
-    }
-  }
-  return recommendedItems;
-};
-
 export const computeRecommendedItems = async (
   user: User,
   ratings: Rating[],
@@ -56,22 +35,23 @@ export const computeRecommendedItems = async (
 ): Promise<RecommendedItem[]> => {
   let recommendedItemsIds: number[] = [];
 
-  const myRatings: MyRatingWithGenreAsString[] = convertGenresToString(
-    ratings.map((rating) => {
-      const ratingUser = users.find((u) => u.id === rating.userId);
-      const ratingItem = items.find((i) => i.id === rating.itemId);
+  const ratingsWithGenreAsString: MyRatingWithGenreAsString[] =
+    convertGenresToString(
+      ratings.map((rating) => {
+        const ratingUser = users.find((u) => u.id === rating.userId);
+        const ratingItem = items.find((i) => i.id === rating.itemId);
 
-      return {
-        ...rating,
-        user: ratingUser,
-        item: ratingItem!,
-      };
-    })
-  );
+        return {
+          ...rating,
+          user: ratingUser,
+          item: ratingItem!,
+        };
+      })
+    );
 
   const minAge = Math.trunc(user.age / 10) * 10;
   const maxAge = minAge + 9;
-  const filteredRatings = myRatings.filter((rating) => {
+  const filteredRatings = ratingsWithGenreAsString.filter((rating) => {
     const ratingUser = users.find((u) => u.id === rating.userId);
 
     return (
@@ -86,9 +66,13 @@ export const computeRecommendedItems = async (
   let ratingsDf = new DataFrame(filteredRatings);
 
   if (filteredRatings.length === 0) {
-    recommendedItemsIds = (await new DataFrame(myRatings).sample(6))['itemId']
-      .values as number[];
-    return getRecommendedItemsFormIds(myRatings, recommendedItemsIds);
+    recommendedItemsIds = (
+      await new DataFrame(ratingsWithGenreAsString).sample(6)
+    )['itemId'].values as number[];
+    return getRecommendedItemsFormIds(
+      ratingsWithGenreAsString,
+      recommendedItemsIds
+    );
   }
 
   ratingsDf = ratingsDf
@@ -112,7 +96,7 @@ export const computeRecommendedItems = async (
     .head(6) as DataFrame;
   recommendedItemsIds = ratingsDf['itemId'].values as number[];
   for (let itemId of recommendedItemsIds) {
-    const recommendedItem = myRatings.find(
+    const recommendedItem = ratingsWithGenreAsString.find(
       (rating) => rating.itemId === itemId
     );
     if (recommendedItem) {
@@ -121,5 +105,8 @@ export const computeRecommendedItems = async (
       })['score'].values[0];
     }
   }
-  return getRecommendedItemsFormIds(myRatings, recommendedItemsIds);
+  return getRecommendedItemsFormIds(
+    ratingsWithGenreAsString,
+    recommendedItemsIds
+  );
 };

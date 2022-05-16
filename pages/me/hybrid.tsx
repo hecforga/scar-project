@@ -7,6 +7,9 @@ import { Col, PageHeader, Row } from 'antd';
 import { convertGenresToString, getMyRatings } from '../api/my-ratings';
 import { getPreferences } from '../api/preference';
 import { getNeighborhood } from '../api/neighborhood';
+import { getRatings } from '../api/ratings';
+import { getUsers } from '../api/users';
+import { getItems } from '../api/items';
 import { RecommendedItem } from '../../common/model/item.model';
 import { MyPreference } from '../../common/model/preference.model';
 import {
@@ -23,9 +26,6 @@ import {
   ItemsGrid,
   UserInfo,
 } from '../../frontend/components/shared';
-import { getRatings } from '../api/ratings';
-import { getUsers } from '../api/users';
-import { getItems } from '../api/items';
 
 type ServerSideProps = {
   recommendedItems: RecommendedItem[];
@@ -141,7 +141,13 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async ({
     }));
 
     const collaborativeRecommendedItems =
-      collaborativeUtils.computeRecommendedItems(myRatings, neighbours);
+      await collaborativeUtils.computeRecommendedItems(
+        myRatings,
+        neighbours,
+        ratings,
+        users,
+        items
+      );
     const demographicRecommendedItems =
       await demographicUtils.computeRecommendedItems(
         session.user,

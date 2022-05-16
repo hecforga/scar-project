@@ -7,6 +7,9 @@ import { Col, PageHeader, Row } from 'antd';
 import { convertGenresToString, getMyRatings } from '../api/my-ratings';
 import { getPreferences } from '../api/preference';
 import { getNeighborhood } from '../api/neighborhood';
+import { getRatings } from '../api/ratings';
+import { getUsers } from '../api/users';
+import { getItems } from '../api/items';
 import { RecommendedItem } from '../../common/model/item.model';
 import { MyPreference } from '../../common/model/preference.model';
 import {
@@ -119,10 +122,10 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async ({
   let recommendedItems: RecommendedItem[] = [];
   let preferences: MyPreference[] = [];
   let neighbours: MyNeighborhood[] = [];
-  let ratings: MyRatingWithGenreAsString[] = [];
+  let myRatings: MyRatingWithGenreAsString[] = [];
 
   if (session) {
-    ratings = convertGenresToString(await getMyRatings(session.user.id));
+    myRatings = convertGenresToString(await getMyRatings(session.user.id));
     preferences = await getPreferences(session.user.id);
     neighbours = (await getNeighborhood(session.user.id)).map((neighbour) => ({
       ...neighbour,
@@ -131,16 +134,25 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async ({
         ratings: convertGenresToString(neighbour.rightUser.ratings),
       },
     }));
+    const ratings = await getRatings();
+    const users = await getUsers();
+    const items = await getItems();
 
-    recommendedItems = computeRecommendedItems(ratings, neighbours);
+    recommendedItems = await computeRecommendedItems(
+      myRatings,
+      neighbours,
+      ratings,
+      users,
+      items
+    );
 
-    ratings = ratings.filter((r) => r.rating === 5).slice(0, 4);
+    myRatings = myRatings.filter((r) => r.rating === 5).slice(0, 4);
   } else {
     res.statusCode = 403;
   }
 
   return {
-    props: { recommendedItems, preferences, neighbours, ratings },
+    props: { recommendedItems, preferences, neighbours, ratings: myRatings },
   };
 };
 

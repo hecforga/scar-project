@@ -1,12 +1,22 @@
-import { RecommendedItem } from '../model/item.model';
+import { Item, Rating, User } from '@prisma/client';
+import { DataFrame } from 'danfojs';
+
+import { convertGenresToString } from '../../pages/api/ratings';
+import {
+  getRecommendedItemsFormIds,
+  MyItem,
+  RecommendedItem,
+} from '../model/item.model';
 import { MyRatingWithGenreAsString } from '../model/rating.model';
 import { MyNeighborhood } from '../model/neighborhood.model';
-import { Item } from '@prisma/client';
 
-export const computeRecommendedItems = (
-  ratings: MyRatingWithGenreAsString[],
-  neighbours: MyNeighborhood[]
-): RecommendedItem[] => {
+export const computeRecommendedItems = async (
+  myRatings: MyRatingWithGenreAsString[],
+  neighbours: MyNeighborhood[],
+  ratings: Rating[],
+  users: User[],
+  items: MyItem[]
+): Promise<RecommendedItem[]> => {
   const neighboursRatings = neighbours
     .map((neighbour) =>
       neighbour.rightUser.ratings.map((rating) => ({
@@ -26,7 +36,9 @@ export const computeRecommendedItems = (
     )
     .filter(
       (neighbourRating) =>
-        !ratings.map((rating) => rating.itemId).includes(neighbourRating.itemId)
+        !myRatings
+          .map((rating) => rating.itemId)
+          .includes(neighbourRating.itemId)
     );
   const itemsWithRating: (Item & {
     genres: string[];
@@ -49,6 +61,30 @@ export const computeRecommendedItems = (
       });
     }
   }
+
+  if (itemsWithRating.length === 0) {
+    const ratingsWithGenreAsString: MyRatingWithGenreAsString[] =
+      convertGenresToString(
+        ratings.map((rating) => {
+          const ratingUser = users.find((u) => u.id === rating.userId);
+          const ratingItem = items.find((i) => i.id === rating.itemId);
+
+          return {
+            ...rating,
+            user: ratingUser,
+            item: ratingItem!,
+          };
+        })
+      );
+    const recommendedItemsIds = (
+      await new DataFrame(ratingsWithGenreAsString).sample(6)
+    )['itemId'].values as number[];
+    return getRecommendedItemsFormIds(
+      ratingsWithGenreAsString,
+      recommendedItemsIds
+    );
+  }
+
   const maxTimes = [...itemsWithRating].sort((a, b) => b.times - a.times)[0]
     .times;
   for (let itemWithRating of itemsWithRating) {
