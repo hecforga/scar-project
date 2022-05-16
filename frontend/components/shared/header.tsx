@@ -80,6 +80,13 @@ const Header: React.FC<Props> = ({ userId, signOut, className }) => {
             </Link>
           </Button>
         </Col>
+        <Col>
+          <Button type="text">
+            <Link href="/me/hybrid">
+              <a>Híbrido</a>
+            </Link>
+          </Button>
+        </Col>
         <Col>{userDropdown}</Col>
       </Row>
     </header>

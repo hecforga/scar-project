@@ -98,7 +98,7 @@ const DemographicPage: NextPage<Props> = ({
             <br />
             <ItemsGrid
               items={getRatingsAsRecommendedItems(ratings)}
-              posters={posters.slice(5)}
+              posters={posters.slice(4)}
               isRating={true}
             />
           </Col>

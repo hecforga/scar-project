@@ -1,11 +1,10 @@
 import { Fragment, useState } from 'react';
 import { GetServerSideProps, NextPage } from 'next';
 import { useRouter } from 'next/router';
-import { useSession, signOut, getSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import styled from 'styled-components';
 import { Alert, Button, Col, PageHeader, Row } from 'antd';
 
-import { convertGenresToString, getMyRatings } from './api/my-ratings';
 import { MyRatingWithGenreAsString } from '../common/model/rating.model';
 import { MyUserCreateInput } from '../common/model/user.model';
 import useUserService from '../frontend/services/userService';
@@ -138,18 +137,10 @@ const RegisterPage: NextPage<Props> = ({ ratings }) => {
   );
 };
 
-export const getServerSideProps: GetServerSideProps<ServerSideProps> = async ({
-  req,
-  res,
-}) => {
-  const session = await getSession({ req });
+export const getServerSideProps: GetServerSideProps<
+  ServerSideProps
+> = async () => {
   let ratings: MyRatingWithGenreAsString[] = [];
-
-  if (session) {
-    ratings = convertGenresToString(await getMyRatings(session.user.id));
-  } else {
-    res.statusCode = 403;
-  }
 
   return {
     props: { ratings },

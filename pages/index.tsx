@@ -71,6 +71,9 @@ const HomePage: NextPage<Props> = () => {
                 <Link key="collaborative" href="/me/collaborative" passHref>
                   <Button type="default">Colaborativo</Button>
                 </Link>,
+                <Link key="hybrid" href="/me/hybrid" passHref>
+                  <Button type="default">Híbrido</Button>
+                </Link>,
               ]}
             />
           </div>

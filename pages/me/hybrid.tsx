@@ -14,7 +14,8 @@ import {
   MyRatingWithGenreAsString,
 } from '../../common/model/rating.model';
 import { MyNeighborhood } from '../../common/model/neighborhood.model';
-import { computeRecommendedItems } from '../../common/utils/collaborative.utils';
+import * as collaborativeUtils from '../../common/utils/collaborative.utils';
+import * as demographicUtils from '../../common/utils/demographic.utils';
 import usePosterService from '../../frontend/services/posterService';
 import {
   Footer,
@@ -22,6 +23,9 @@ import {
   ItemsGrid,
   UserInfo,
 } from '../../frontend/components/shared';
+import { getRatings } from '../api/ratings';
+import { getUsers } from '../api/users';
+import { getItems } from '../api/items';
 
 type ServerSideProps = {
   recommendedItems: RecommendedItem[];
@@ -48,7 +52,7 @@ const Content = styled.main`
   padding-right: ${(props) => props.theme.grid.getGridColumns(1, 1)};
 `;
 
-const CollaborativePage: NextPage<Props> = ({
+const HybridPage: NextPage<Props> = ({
   recommendedItems,
   preferences,
   neighbours,
@@ -119,10 +123,14 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async ({
   let recommendedItems: RecommendedItem[] = [];
   let preferences: MyPreference[] = [];
   let neighbours: MyNeighborhood[] = [];
-  let ratings: MyRatingWithGenreAsString[] = [];
+  let myRatings: MyRatingWithGenreAsString[] = [];
 
   if (session) {
-    ratings = convertGenresToString(await getMyRatings(session.user.id));
+    const ratings = await getRatings();
+    const users = await getUsers();
+    const items = await getItems();
+
+    myRatings = convertGenresToString(await getMyRatings(session.user.id));
     preferences = await getPreferences(session.user.id);
     neighbours = (await getNeighborhood(session.user.id)).map((neighbour) => ({
       ...neighbour,
@@ -132,16 +140,47 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async ({
       },
     }));
 
-    recommendedItems = computeRecommendedItems(ratings, neighbours);
+    const collaborativeRecommendedItems =
+      collaborativeUtils.computeRecommendedItems(myRatings, neighbours);
+    const demographicRecommendedItems =
+      await demographicUtils.computeRecommendedItems(
+        session.user,
+        ratings,
+        users,
+        items
+      );
+    let collaborativeCount = 0;
+    let demographicCount = 0;
+    while (recommendedItems.length < 6) {
+      if (collaborativeCount <= demographicCount) {
+        const collaborativeItem =
+          collaborativeRecommendedItems[collaborativeCount];
+        if (!recommendedItems.find((i) => i.id === collaborativeItem.id)) {
+          recommendedItems.push(collaborativeItem);
+        }
+        collaborativeCount += 1;
+      } else {
+        const demographicItem = demographicRecommendedItems[demographicCount];
+        if (!recommendedItems.find((i) => i.id === demographicItem.id)) {
+          recommendedItems.push(demographicItem);
+        }
+        demographicCount += 1;
+      }
+    }
+    console.log(collaborativeCount);
+    console.log(demographicCount);
+    recommendedItems = [...recommendedItems].sort(
+      (a, b) => b.rating - a.rating
+    );
 
-    ratings = ratings.filter((r) => r.rating === 5).slice(0, 4);
+    myRatings = myRatings.filter((r) => r.rating === 5).slice(0, 4);
   } else {
     res.statusCode = 403;
   }
 
   return {
-    props: { recommendedItems, preferences, neighbours, ratings },
+    props: { recommendedItems, preferences, neighbours, ratings: myRatings },
   };
 };
 
-export default CollaborativePage;
+export default HybridPage;
