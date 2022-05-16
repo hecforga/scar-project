@@ -1,0 +1,12 @@
+name: daily vercel deployment
+on:
+  workflow_dispatch:
+  schedule:
+    - cron:  '0 02 * * *'
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: fjogeleit/http-request-action@master
+        with:
+          url: https://api.vercel.com/v1/integrations/deploy/prj_yG5nFGsG36oExWJuCGdZmXEbAeNy/nX1iCHosmJ
