@@ -15,7 +15,14 @@ const RatingsEditor: React.FC<Props> = ({ ratings, className }) => {
     <div className={className}>
       <Descriptions title="Información colaborativa" />
 
-      <div>{ratings.length}</div>
+      {ratings.length === 0 ? (
+        <div>
+          De momento, solo se soporta la inserción/edición de valoraciones
+          directamente por base de datos.
+        </div>
+      ) : (
+        <div>Has realizado un total de {ratings.length} valoraciones</div>
+      )}
     </div>
   );
 };
