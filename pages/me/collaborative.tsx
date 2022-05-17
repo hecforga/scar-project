@@ -98,7 +98,7 @@ const CollaborativePage: NextPage<Props> = ({
             <br />
             <ItemsGrid
               items={getRatingsAsRecommendedItems(ratings)}
-              posters={posters.slice(4)}
+              posters={posters.slice(6)}
               isRating={true}
             />
           </Col>

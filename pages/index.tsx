@@ -63,7 +63,7 @@ const HomePage: NextPage<Props> = () => {
             <Result
               status="success"
               title={`Has iniciado sesión correctamente (usuario ${data.user.id})`}
-              subTitle="Utilice los botones de abajo o los del menú superior para probar los diferentes recomendadores"
+              subTitle="Utiliza los botones de abajo o los del menú superior para probar los diferentes recomendadores"
               extra={[
                 <Link key="demographic" href="/me/demographic" passHref>
                   <Button type="default">Demográfico</Button>
@@ -81,7 +81,7 @@ const HomePage: NextPage<Props> = () => {
           <Result
             status="warning"
             title="No has iniciado sesión"
-            subTitle="Utilice los siguientes botones para iniciar sesión o crear una cuenta"
+            subTitle="Utiliza los siguientes botones para iniciar sesión o crear una cuenta"
             extra={[
               <a
                 key="signIn"
