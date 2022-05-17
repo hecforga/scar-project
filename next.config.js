@@ -3,7 +3,7 @@ const withAntdLess = require('next-plugin-antd-less');
 
 const nextConfig = {
   reactStrictMode: true,
-  staticPageGenerationTimeout: 600,
+  staticPageGenerationTimeout: 3000,
 };
 
 const pluginAntdLess = withAntdLess({

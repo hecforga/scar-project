@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react';
-import { GetServerSideProps, NextPage } from 'next';
+import { GetStaticProps, NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { useSession, signOut } from 'next-auth/react';
 import styled from 'styled-components';
@@ -16,11 +16,11 @@ import {
 } from '../frontend/components/shared';
 import { User } from '@prisma/client';
 
-type ServerSideProps = {
+type StaticProps = {
   ratings: MyRatingWithGenreAsString[];
 };
 
-type Props = ServerSideProps;
+type Props = StaticProps;
 
 const Layout = styled.div`
   display: flex;
@@ -137,9 +137,7 @@ const RegisterPage: NextPage<Props> = ({ ratings }) => {
   );
 };
 
-export const getServerSideProps: GetServerSideProps<
-  ServerSideProps
-> = async () => {
+export const getStaticProps: GetStaticProps<StaticProps> = async () => {
   let ratings: MyRatingWithGenreAsString[] = [];
 
   return {
