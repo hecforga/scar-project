@@ -1,12 +1,15 @@
 ﻿# Memoria del proyecto de SCAR
 
 En esta memoria se recogen los detalles sobre la implementación de los 3 tipos de recomendación presentes en este proyecto de la asignatura "Sistemas Complejos Adaptativos y Recomendación" de la UPV, realizado por el alumno Héctor Fornes Gabaldón.
+
 El resultado final puede verse en la siguiente [DEMO](https://scar-project.vercel.app/) (para hacer login, basta con introducir el identificador de un usuario, p. ej. el "1").
 
 ## Tecnologías utilizadas
 
 Antes de entrar en los detalles de implementación, se considera oportuno comentar la arquitectura y las diferentes tecnologías que han sido utilizadas para la realización del proyecto.
+
 En primer lugar, cabe destacar que el lenguaje de programación escogido, debido al hecho de ser una aplicación web, es TypeScript. Más concretamente, se ha utilizado el framework Next.js, por ofrecer una forma sencilla de integrar el frontend y el backend en una misma base de código. Una peculiaridad del backend que ofrece, es que se trata de funciones serverless, las cuales, y en el contexto de la primera parte de la asignatura, podrían considerarse como agentes cuyo tiempo de vida se limita a la ejecución de una tarea corta y específica.
+
 En cuanto a la base de datos, se ha utilizado una PostgreSQL alojada en Azure, y para facilitar el lanzamiento de consultas se ha utilizado el ORM Prisma. Esta librería ofrece una funcionalidad que está relacionada con la primera parte de la asignatura, pues permite definir la estructura de la base de datos en un esquema que contiene las diferentes entidades con sus propiedades, a la vez que las relaciones entre ellas. Este esquema podría considerarse como una especie de ontología, y además ofrece otra ventaja, y es que genera todos los tipos de TypeScript necesarios para luego poder usarlos a lo largo de la aplicación. A continuación, puede verse el esquema:
 
 ```typescript
@@ -178,6 +181,7 @@ export const computeRecommendedItems = async (
   );
 };
 ```
+
 Además, existe una pantalla de perfil en la que se permite modificar la información demográfica. Puede comprobarse cómo las recomendaciones cambiar al modificar dicha información. A continuación, se incluyen pantallazos de las pantallas relevantes para esta sección:
 
 ![Perfil](https://raw.githubusercontent.com/hecforga/scar-project/master/public/images/profile.jpg)
@@ -194,7 +198,9 @@ Lo más destacable del recomendador colaborativo, es que, al tratarse de un cál
 ### Cálculo de preferencias y vecinos
 
 Las preferencias se han hecho a nivel de género, eligiendo los 5 más votados por cada usuario. Al más votado se le ha dado un `rating` de 100, y al quinto más votado un `rating` de 60, entiendo el primer valor como un sobresaliente y el segundo como un bien. Los géneros del segundo al cuarto obtienen una puntuación ponderada entre estas 2 cifras. Además, para dotar de variabilidad al sistema, todos estos `ratings` se ven sometidos a un proceso de `randomización` al verse multiplicados por un número aleatorio entre 0,9 y 1.
+
 En cuanto a los vecinos, y como se proponía en las diapositivas de la asignatura, se ha utilizado la distancia de `Pearson` para obtener los 5 vecinos más cercanos a cada usuario. 
+
 Toda esta información se elimina y se vuelve a regenerar una vez al día de forma automática.
 
 ### Cálculo de recomendaciones
@@ -288,7 +294,7 @@ export const computeRecommendedItems = async (
 
 En este caso, la posibilidad de modificar y/o añadir valoraciones ha quedado pendiente para futuros trabajos. Sin embargo, puede comprobarse utilizando la demo cómo cada usuario obtiene unas valoraciones diferentes, así como la distancia con sus primeros 5 vecinos, que era el objetivo principal de este trabajo. A continuación, se incluye un pantallazo del recomendador colaborativo:
 
-![enter image description here](https://raw.githubusercontent.com/hecforga/scar-project/master/public/images/collaborative.jpg)
+![Recomendador colaborativo](https://raw.githubusercontent.com/hecforga/scar-project/master/public/images/collaborative.jpg)
 
 ## Recomendador híbrido
 
@@ -372,4 +378,4 @@ export const getServerSideProps: GetServerSideProps<ServerSideProps> = async ({
 
 A continuación, y para concluir con esta memoria, se muestra una captura de la pantalla del recomendador híbrido:
 
-![enter image description here](https://raw.githubusercontent.com/hecforga/scar-project/master/public/images/hybrid.jpg)
+![Recomendador híbrido](https://raw.githubusercontent.com/hecforga/scar-project/master/public/images/hybrid.jpg)
